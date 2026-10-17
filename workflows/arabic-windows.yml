@@ -1,0 +1,60 @@
+name: Arabic WordCraft Windows Portable
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout WordCraft upstream at known commit
+        uses: actions/checkout@v4
+        with:
+          repository: storytold/wordcraft
+          ref: eae242176108d328c5dd81fbc10370c51ab90706
+          path: wordcraft
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Add Arabic catalog
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, gzip
+          root = Path('wordcraft/crates/ui-egui/src/i18n')
+          (root / 'ar.tsv').write_bytes(gzip.decompress(base64.b64decode('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')))
+          mod = root / 'mod.rs'
+          s = mod.read_text(encoding='utf-8')
+          old = 'pub static LANGUAGES: [LangInfo; 23] = ['
+          new = 'pub static LANGUAGES: [LangInfo; 24] = ['
+          assert s.count(old) == 1, 'Upstream language registry format changed'
+          s = s.replace(old,new)
+          marker = '    LangInfo { code: "en", name: "English", source: "", prefer_hans: false, editing_lang: None, catalog: OnceLock::new() },'
+          assert s.count(marker) == 1, 'Could not find English registry entry'
+          addition = '\n    LangInfo { code: "ar", name: "العربية", source: include_str!("ar.tsv"), prefer_hans: false, editing_lang: None, catalog: OnceLock::new() },'
+          s = s.replace(marker, marker + addition)
+          mod.write_text(s,encoding='utf-8')
+          print('Added Arabic interface catalog and language registry entry')
+          PY
+      - name: Build WordCraft
+        working-directory: wordcraft
+        shell: pwsh
+        run: cargo build --release --locked -p wordcraft
+      - name: Package EXE
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item wordcraft/target/release/wordcraft.exe dist/wordcraft.exe
+          Compress-Archive -Path dist/wordcraft.exe -DestinationPath WordCraft-Arabic-Windows-x64.zip
+      - name: Upload Windows portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: WordCraft-Arabic-Windows-x64
+          path: WordCraft-Arabic-Windows-x64.zip
+          if-no-files-found: error
