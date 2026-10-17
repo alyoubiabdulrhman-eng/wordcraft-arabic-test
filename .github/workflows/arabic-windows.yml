@@ -42,6 +42,36 @@ jobs:
           mod.write_text(s,encoding='utf-8')
           print('Added Arabic interface catalog and language registry entry')
           PY
+      - name: Add Arabic UI font fallback (Noto Sans Arabic)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $fontPath = 'wordcraft/assets/fonts/NotoSansArabic.ttf'
+          $fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/NotoSansArabic%5Bwdth%2Cwght%5D.ttf'
+          Invoke-WebRequest -Uri $fontUrl -OutFile $fontPath
+          if ((Get-Item $fontPath).Length -lt 10000) { throw 'Arabic font download was too small' }
+          $licenseUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/OFL.txt'
+          Invoke-WebRequest -Uri $licenseUrl -OutFile 'wordcraft/assets/fonts/NotoSansArabic-OFL.txt'
+          @'
+          from pathlib import Path
+          p = Path('wordcraft/crates/ui-egui/src/theme.rs')
+          text = p.read_text(encoding='utf-8')
+          anchor = '    add(&mut fonts, "Inter", include_bytes!("../../../assets/fonts/Inter-Regular.ttf"));'
+          assert text.count(anchor) == 1, 'Font initialization has changed upstream'
+          text = text.replace(anchor, anchor + '\n    add(&mut fonts, "NotoArabic", include_bytes!("../../../assets/fonts/NotoSansArabic.ttf"));')
+          needle = '    let add_cjk = |fonts: &mut FontDefinitions, name: String, data: FontData| {'
+          assert text.count(needle) == 1, 'Font family setup has changed upstream'
+          extra = """    // Fallback for Arabic UI translations, including menu titles and settings.
+              for family in [FontFamily::Proportional, FontFamily::Name("medium".into()), FontFamily::Name("semibold".into())] {
+                  if let Some(faces) = fonts.families.get_mut(&family) {
+                      faces.push("NotoArabic".into());
+                  }
+              }
+          """
+          text = text.replace(needle, extra + needle)
+          p.write_text(text, encoding='utf-8')
+          print('Embedded Noto Sans Arabic as a UI fallback font')
+          '@ | python -
       - name: Build WordCraft
         working-directory: wordcraft
         shell: pwsh
